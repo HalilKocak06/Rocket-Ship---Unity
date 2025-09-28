@@ -7,6 +7,10 @@ public class Movement : MonoBehaviour
     [SerializeField] InputAction rotation;
     [SerializeField] float thrustStrength = 1000f;
     [SerializeField] float rotationStrength = 100f;
+    [SerializeField] AudioClip mainEngineSFX;
+    [SerializeField] ParticleSystem mainEngineParticles;
+    [SerializeField] ParticleSystem rightThrustParticles;
+    [SerializeField] ParticleSystem leftThrustParticles;
 
     AudioSource audioSource;
 
@@ -36,21 +40,40 @@ public class Movement : MonoBehaviour
     {
         if (thrust.IsPressed()) // Aksiyon butonu basılı mı? (Basılı tutulduğu sürece true döner.)
         {
-            // Roketin yerel "up" ekseni (yerel Y+) yönünde itiş uygula.
-            // AddRelativeForce: yerel eksende kuvvet uygular (yani roket hangi yöne dönükse o yöne iter).
-
-            rb.AddRelativeForce(Vector3.up * thrustStrength * Time.fixedDeltaTime);
-            if (!audioSource.isPlaying)
-            {
-                audioSource.Play();
-            }
-            else
-            {
-                audioSource.Stop();
-            }
             
+            StartThrusting();
         }
 
+
+        else
+        {
+            StopThrusting();
+        }
+
+
+
+    }
+
+    private void StopThrusting()
+    {
+        audioSource.Stop();
+        mainEngineParticles.Stop();
+    }
+
+    private void StartThrusting()
+    {
+        // Roketin yerel "up" ekseni (yerel Y+) yönünde itiş uygula.
+            // AddRelativeForce: yerel eksende kuvvet uygular (yani roket hangi yöne dönükse o yöne iter).
+        rb.AddRelativeForce(Vector3.up * thrustStrength * Time.fixedDeltaTime);
+        if (!audioSource.isPlaying)
+        {
+            audioSource.PlayOneShot(mainEngineSFX);
+        }
+
+        if (!mainEngineParticles.isPlaying)
+        {
+            mainEngineParticles.Play();
+        }
     }
 
     private void ProcessRotation()
@@ -58,16 +81,45 @@ public class Movement : MonoBehaviour
         float rotationInput = rotation.ReadValue<float>();
         if (rotationInput < 0)
         {
-            ApplyRotation(rotationStrength);
+            RotateRight();
         }
 
         else if (rotationInput > 0)
         {
-            ApplyRotation(-rotationStrength);
+            RotateLeft();
+        }
+        else
+        {
+            StopRotating();
         }
 
     }
+  private void RotateRight()
+    {
+        ApplyRotation(rotationStrength);
+        if (!rightThrustParticles.isPlaying)
+        {
+            leftThrustParticles.Stop();
+            rightThrustParticles.Play();
+        }
+    }
+   private void RotateLeft()
+    {
+        ApplyRotation(-rotationStrength);
+        if (!leftThrustParticles.isPlaying)
+        {
+            rightThrustParticles.Stop();
+            leftThrustParticles.Play();
+        }
+    }
 
+    private void StopRotating()
+    {
+        rightThrustParticles.Stop();
+        leftThrustParticles.Stop();
+    }
+
+ 
     private void ApplyRotation(float rotationThisFrame)
     {
         rb.freezeRotation = true;
